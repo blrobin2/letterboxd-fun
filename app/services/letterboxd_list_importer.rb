@@ -4,18 +4,23 @@ class LetterboxdListImporter
 
     def initialize
         @browser = Watir::Browser.new :chrome
-        @lists = List.where.not(id: ListFilm.pluck(:list_id).reject {|x| x.nil?}.uniq)
+        @lists = List.all
     end
 
     def import_lists
-        @lists.each { |list| import_list(list) }
+        @lists.each do |list|
+            import_list(list)
+        end
     end
 
     def import_list(list)
         @browser.goto(list.link)
         return unless challenge_list?(@browser)
 
-        doc = @browser.elements(css: '[data-film-name]').wait_until(&:present?)
+        # force page to load all elements
+        @browser.scroll.to(:bottom)
+        # wait for page to load bottom elements
+        doc = @browser.elements(css: '[data-film-name]').wait_until { sleep(5) }
         doc.each { |item| import_list_item(item, list) }
     end
 
